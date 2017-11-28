@@ -1,0 +1,3 @@
+/Users/bevintang/Downloads/School/CSC471/lab02-master/build/CMakeFiles/Lab01.dir
+/Users/bevintang/Downloads/School/CSC471/lab02-master/build/CMakeFiles/ALL_BUILD.dir
+/Users/bevintang/Downloads/School/CSC471/lab02-master/build/CMakeFiles/ZERO_CHECK.dir

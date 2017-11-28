@@ -1,0 +1,3 @@
+/Users/bevintang/Downloads/School/CSC471/program01-master/build/CMakeFiles/raster.dir
+/Users/bevintang/Downloads/School/CSC471/program01-master/build/CMakeFiles/ALL_BUILD.dir
+/Users/bevintang/Downloads/School/CSC471/program01-master/build/CMakeFiles/ZERO_CHECK.dir
