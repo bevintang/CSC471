@@ -5,6 +5,7 @@
 #include <cmath>
 #include <cstdlib>
 #include <iostream>
+#include <fstream>
 #include <glad/glad.h>
 
 #include "GLSL.h"
@@ -19,6 +20,9 @@
 
 using namespace std;
 using namespace glm;
+
+int score = -1;
+int highscore = -1;
 
 class Application : public EventCallbacks
 {
@@ -76,7 +80,6 @@ public:
 	bool falling = false;
 
 	// Game details
-	int score = -1;
 	int milestone = 5;
 	float speed = 0.10;
 	int startFrames = 0;
@@ -118,16 +121,37 @@ public:
 			if (duckPos > RIGHT)
 				duckPos = RIGHT;
 		}
-		else if (key == GLFW_KEY_DOWN && action == GLFW_RELEASE)
+		else if (key == GLFW_KEY_DOWN && action == GLFW_RELEASE && !gameover)
 		{
 			duckHeight = STANDING;
 			legMoving = true;
 		}
-		else if (key == GLFW_KEY_DOWN && (action == GLFW_PRESS || action == GLFW_REPEAT) && !jumping && !gameover) 
+		else if (key == GLFW_KEY_DOWN && (action == GLFW_PRESS || action == GLFW_REPEAT) && !gameover) 
 		{
+			jumping = false;
+			falling =
+			jumpHeight = 0;
 			duckHeight = SLIDING;
 			frontLegRotation = 1.5;
 			legMoving = false;
+		}
+		else if (key == GLFW_KEY_SPACE && action == GLFW_PRESS && gameover)
+		{
+			gameover = false;
+			score = -1;
+			startFrames = 0;
+			deathFrames = 0;
+			playTime = 0;
+			arrowTime = 0;
+			cubePos = -15;
+			duckPos = 0;
+			duckHeight = STANDING;
+			jumpHeight = 0;
+			legMoving = true;
+			jumping = false;
+			falling = false;
+			speed = 0.1;
+			speedingUp = false;
 		}
 
 	}
@@ -211,11 +235,10 @@ public:
 		sphereShape->init();
 	}
 
-	void drawDigit(shared_ptr<MatrixStack>& P, shared_ptr<MatrixStack>& MV, int digit) {
+	void drawSegment(shared_ptr<MatrixStack>& P, shared_ptr<MatrixStack>& MV, int digit) {
 		glUniformMatrix4fv(cubeProg->getUniform("P"), 1, GL_FALSE, value_ptr(P->topMatrix()));
 
 		if (digit == 0 || digit == 2 || digit == 3 || digit == 5 || digit == 6 || digit == 7 || digit == 8 || digit == 9) {
-			//segment 1
 			MV->pushMatrix();
 			MV->translate(vec3(0, 0, -10));
 			MV->scale(vec3(0.2, 0.05, 0.005));
@@ -226,7 +249,6 @@ public:
 		}
 
 		if (digit == 0 || digit == 4 || digit == 5 || digit == 6 || digit == 8 || digit == 9) {
-			//segment 2
 			MV->pushMatrix();
 			MV->translate(vec3(-0.15, -0.15, -10));
 			MV->scale(vec3(0.05, 0.2, 0.005));
@@ -237,7 +259,6 @@ public:
 		}
 
 		if (digit == 0 || digit == 1 || digit == 2 || digit == 3 || digit == 4 || digit == 7 || digit == 8 || digit == 9) {
-			//segment 3
 			MV->pushMatrix();
 			MV->translate(vec3(0.15, -0.15, -10));
 			MV->scale(vec3(0.05, 0.2, 0.005));
@@ -248,7 +269,6 @@ public:
 		}
 
 		if (digit == 2 || digit == 3 || digit == 4 || digit == 5 || digit== 6 || digit == 8 || digit == 9) {
-			//segment 4
 			MV->pushMatrix();
 			MV->translate(vec3(0, -0.3, -10));
 			MV->scale(vec3(0.2, 0.05, 0.005));
@@ -259,7 +279,6 @@ public:
 		}
 
 		if (digit == 0 || digit == 2 || digit == 6 || digit == 8) {
-			//segment 5
 			MV->pushMatrix();
 			MV->translate(vec3(-0.15, -0.45, -10));
 			MV->scale(vec3(0.05, 0.2, 0.005));
@@ -270,7 +289,6 @@ public:
 		}
 
 		if (digit == 0 || digit == 1 || digit == 3 || digit == 4 || digit == 5 || digit == 6 || digit == 7 || digit == 8 || digit == 9) {
-			//segment 6
 			MV->pushMatrix();
 			MV->translate(vec3(0.15, -0.45, -10));
 			MV->scale(vec3(0.05, 0.2, 0.005));
@@ -281,7 +299,6 @@ public:
 		}
 
 		if (digit == 0 || digit == 2 || digit == 3 || digit == 5 || digit == 6 || digit == 8) {
-			//segment 7
 			MV->pushMatrix();
 			MV->translate(vec3(0, -0.6, -10));
 			MV->scale(vec3(0.2, 0.05, 0.005));
@@ -292,7 +309,7 @@ public:
 		}
 	}
 
-	void drawScore(shared_ptr<MatrixStack>& P, shared_ptr<MatrixStack>& MV) {
+	void drawScore(shared_ptr<MatrixStack>& P, shared_ptr<MatrixStack>& MV, int score) {
 		int digitOnes = score % 10;
 		int digitTens = (score % 100) / 10;
 		int digitHundreds = (score % 1000) / 100;
@@ -300,34 +317,34 @@ public:
 		if (score < 10) {
 			MV->pushMatrix();
 			MV->translate(vec3(-2.25, 2.3, 0));
-			drawDigit(P, MV, digitOnes);
+			drawSegment(P, MV, digitOnes);
 			MV->popMatrix();
 		}
 		else if (score < 100) {
 			MV->pushMatrix();
 			MV->translate(vec3(-2.75, 2.3, 0));
-			drawDigit(P, MV, digitTens);
+			drawSegment(P, MV, digitTens);
 			MV->popMatrix();
 
 			MV->pushMatrix();
 			MV->translate(vec3(-2.25, 2.3, 0));
-			drawDigit(P, MV, digitOnes);
+			drawSegment(P, MV, digitOnes);
 			MV->popMatrix();
 		}
 		else {
 			MV->pushMatrix();
 			MV->translate(vec3(-3.25, 2.3, 0));
-			drawDigit(P, MV, digitHundreds);
+			drawSegment(P, MV, digitHundreds);
 			MV->popMatrix();
 
 			MV->pushMatrix();
 			MV->translate(vec3(-2.75, 2.3, 0));
-			drawDigit(P, MV, digitTens);
+			drawSegment(P, MV, digitTens);
 			MV->popMatrix();
 
 			MV->pushMatrix();
 			MV->translate(vec3(-2.25, 2.3, 0));
-			drawDigit(P, MV, digitOnes);
+			drawSegment(P, MV, digitOnes);
 			MV->popMatrix();
 		}
 	}
@@ -786,6 +803,47 @@ public:
 		MV->popMatrix();
 	}
 
+	void drawH(shared_ptr<MatrixStack> &P, shared_ptr<MatrixStack> &MV){
+		MV->pushMatrix();
+		// Draw 'H'
+		MV->translate(vec3(-.83, .86, 0));
+			MV->scale(vec3(.02, .005, .005));
+			glUniformMatrix4fv(cubeProg->getUniform("MV"), 1, GL_FALSE, value_ptr(MV->topMatrix()));
+			glUniform3f(cubeProg->getUniform("uColor"), 1, 1, 0);
+			shape->draw(cubeProg);
+		MV->popMatrix();
+		MV->pushMatrix();
+		MV->translate(vec3(-.85, .86, 0));
+			MV->scale(vec3(.005, .05, .005));
+			glUniformMatrix4fv(cubeProg->getUniform("MV"), 1, GL_FALSE, value_ptr(MV->topMatrix()));
+			glUniform3f(cubeProg->getUniform("uColor"), 1, 1, 0);
+			shape->draw(cubeProg);
+		MV->popMatrix();
+		MV->pushMatrix();
+		MV->translate(vec3(-.81, .86, 0));
+			MV->scale(vec3(.005, .05, .005));
+			glUniformMatrix4fv(cubeProg->getUniform("MV"), 1, GL_FALSE, value_ptr(MV->topMatrix()));
+			glUniform3f(cubeProg->getUniform("uColor"), 1, 1, 0);
+			shape->draw(cubeProg);
+		MV->popMatrix();
+
+		// Draw ':'
+		MV->pushMatrix();
+		MV->translate(vec3(-.78, .82, 0));
+			MV->scale(.005);
+			glUniformMatrix4fv(cubeProg->getUniform("MV"), 1, GL_FALSE, value_ptr(MV->topMatrix()));
+			glUniform3f(cubeProg->getUniform("uColor"), 1, 1, 0);
+			shape->draw(cubeProg);
+		MV->popMatrix();
+		MV->pushMatrix();
+		MV->translate(vec3(-.78, .85, 0));
+			MV->scale(.005);
+			glUniformMatrix4fv(cubeProg->getUniform("MV"), 1, GL_FALSE, value_ptr(MV->topMatrix()));
+			glUniform3f(cubeProg->getUniform("uColor"), 1, 1, 0);
+			shape->draw(cubeProg);
+		MV->popMatrix();
+	}
+
 	int randType(){
 		int type = rand() % 2;
 
@@ -864,8 +922,17 @@ public:
 		// Draw scoreboard
 		MV->pushMatrix();
 			MV->translate(vec3(5, 1.15, 5));
-			drawScore(P, MV);
+			drawScore(P, MV, score);
 		MV->popMatrix();
+
+		// Draw highscore
+		MV->pushMatrix();
+			MV->translate(vec3(.6, 1.15, 5));
+			drawScore(P, MV, highscore);
+		MV->popMatrix();		
+
+		// Draw "H:"
+		drawH(P, MV);
 
 		// Draw "speed up" arrows
 		if (speedingUp){
@@ -918,6 +985,13 @@ int main(int argc, char *argv[])
 	// This is the code that will likely change program to program as you
 	// may need to initialize or set up different data and state
 
+	// Setup Highscore:
+	fstream file;
+	file.open(resourceDir + "/highscore.txt");
+	file >> highscore;
+	file.close();
+	file.open(resourceDir + "/highscore.txt", ios::out | ios::trunc);
+
 	application->init(resourceDir);
 	application->initGeom(resourceDir);
 
@@ -926,6 +1000,10 @@ int main(int argc, char *argv[])
 	{
 		// Render scene.
 		application->render();
+		// Check on score
+		if (score > highscore){
+			highscore = score;
+		}
 		// Swap front and back buffers.
 		glfwSwapBuffers(windowManager->getHandle());
 		// Poll for and process events.
@@ -933,6 +1011,8 @@ int main(int argc, char *argv[])
 	}
 
 	// Quit program.
+	file << highscore;
+	file.close();
 	windowManager->shutdown();
 	return 0;
 }

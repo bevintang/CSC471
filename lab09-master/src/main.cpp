@@ -52,8 +52,8 @@ public:
 	GLuint VertexBufferID;
 
 	//geometry for texture render
-	GLuint quad_VertexArrayID;
-	GLuint quad_vertexbuffer;
+	// GLuint quad_VertexArrayID;
+	// GLuint quad_vertexbuffer;
 
 	//three different textures
 	shared_ptr<Texture> texture0;
