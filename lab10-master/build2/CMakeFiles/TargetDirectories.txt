@@ -1,0 +1,3 @@
+/Users/bevintang/CSC471/lab10-master/build2/CMakeFiles/rebuild_cache.dir
+/Users/bevintang/CSC471/lab10-master/build2/CMakeFiles/edit_cache.dir
+/Users/bevintang/CSC471/lab10-master/build2/CMakeFiles/lab10.dir

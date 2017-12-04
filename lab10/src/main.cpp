@@ -24,6 +24,7 @@
 using namespace std;
 using namespace glm;
 
+
 class Application : public EventCallbacks
 {
 
@@ -33,7 +34,7 @@ public:
 
 	// Our shader program
 	std::shared_ptr<Program> prog;
-	std::shared_ptr<Program> pprog;
+	std::shared_ptr<Program> prog2;
 
 	std::shared_ptr<Shape> shape;
 
@@ -119,7 +120,7 @@ public:
 		GLSL::checkVersion();
 
 		// Set background color.
-		CHECKED_GL_CALL(glClearColor(.12f, .34f, .56f, 1.f));
+		CHECKED_GL_CALL(glClearColor(.12f, .34f, .56f, 1.0f));
 
 		// Enable z-buffer test.
 		CHECKED_GL_CALL(glEnable(GL_DEPTH_TEST));
@@ -131,8 +132,8 @@ public:
 		prog = make_shared<Program>();
 		prog->setVerbose(true);
 		prog->setShaderNames(
-			resourceDirectory + "/phong_vert33.glsl",
-			resourceDirectory + "/phong_frag33.glsl");
+			resourceDirectory + "/lab10_vert.glsl",
+			resourceDirectory + "/lab10_frag.glsl");
 		if (! prog->init())
 		{
 			std::cerr << "One or more shaders failed to compile... exiting!" << std::endl;
@@ -140,32 +141,62 @@ public:
 		}
 		prog->addUniform("P");
 		prog->addUniform("MV");
-		prog->addUniform("AMBIENCE");
-		prog->addUniform("DIFFUSE");
-		prog->addUniform("SPECULAR");
-		prog->addUniform("SHINE");
-		prog->addUniform("uLight");
-		prog->addUniform("eye");
+		prog->addUniform("alphaTexture");
 		prog->addAttribute("vertPos");
-		prog->addAttribute("vertNor");
 
-
-		pprog = make_shared<Program>();
-		pprog->setVerbose(true);
-		pprog->setShaderNames(
-			resourceDirectory + "/lab10_vert.glsl",
-			resourceDirectory + "/lab10_frag.glsl");
-		if (! pprog->init())
+		prog2 = make_shared<Program>();
+		prog2->setVerbose(true);
+		prog2->setShaderNames(
+			resourceDirectory + "/simple_vert.glsl",
+			resourceDirectory + "/simple_frag.glsl");
+		if (! prog2->init())
 		{
 			std::cerr << "One or more shaders failed to compile... exiting!" << std::endl;
 			exit(1);
 		}
-		pprog->addUniform("P");
-		pprog->addUniform("MV");
-		pprog->addUniform("alphaTexture");
-		pprog->addAttribute("vertPos");
-	}
+		prog2->init();
+		prog2->addUniform("P");
+		prog2->addUniform("MV");
+		prog2->addUniform("ambient");
+		prog2->addUniform("diffuse");
+		prog2->addUniform("specular");
+		prog2->addUniform("shinny");
+		prog2->addUniform("lightSrc");
+		prog2->addUniform("camera");
+		prog2->addAttribute("vertPos");
+		prog2->addAttribute("vertNor");
 
+
+	}
+	void SetMaterial(int i)
+	{
+	  switch (i) {
+	  case 0: // shiny blue plastic
+	    glUniform3f(prog2->getUniform("ambient"), 0.02, 0.04, 0.2);
+	    glUniform3f(prog2->getUniform("diffuse"), 0.0, 0.16, 0.9);
+	    glUniform3f(prog2->getUniform("specular"), 0.14, 0.2, 0.8);
+	    glUniform1f(prog2->getUniform("shinny"), 120.0);
+	    break;
+	  case 1: // flat grey
+	    glUniform3f(prog2->getUniform("ambient"), 0.13, 0.13, 0.14);
+	    glUniform3f(prog2->getUniform("diffuse"), 0.3, 0.3, 0.4);
+	    glUniform3f(prog2->getUniform("specular"), 0.3, 0.3, 0.4);
+	    glUniform1f(prog2->getUniform("shinny"), 4.0);
+	    break;
+	  case 2: // brass
+	    glUniform3f(prog2->getUniform("ambient"), 0.3294, 0.2235, 0.02745);
+	    glUniform3f(prog2->getUniform("diffuse"), 0.7804, 0.5686, 0.11373);
+	    glUniform3f(prog2->getUniform("specular"), 0.9922, 0.941176, 0.80784);
+	    glUniform1f(prog2->getUniform("shinny"), 27.9);
+	    break;
+		case 3: // yellow play doh
+	    glUniform3f(prog2->getUniform("ambient"), 0.3294, 0.2235, 0.02745);
+	    glUniform3f(prog2->getUniform("diffuse"), 0.7804, 0.7686, 0.2000);
+	    glUniform3f(prog2->getUniform("specular"), 0.6, 0.6, 0.2);
+	    glUniform1f(prog2->getUniform("shinny"), 900.9);
+	    break;
+  	}
+	}
 	// Code to load in the three textures
 	void initTex(const std::string& resourceDirectory)
 	{
@@ -190,7 +221,6 @@ public:
 
 	void initGeom(const std::string& resourceDirectory)
 	{
-		// Initialize sphere mesh
 		shape = make_shared<Shape>();
 		shape->loadMesh(resourceDirectory + "/bunny.obj");
 		shape->resize();
@@ -266,43 +296,6 @@ public:
 		std::sort(particles.begin(), particles.end(), sorter);
 	}
 
-	void SetMaterial(int i)
-	{
-		switch (i)
-		{
-		case 0: //shiny blue plastic
-			glUniform3f(prog->getUniform("AMBIENCE"), 0.02f, 0.04f, 0.2f);
-			glUniform3f(prog->getUniform("DIFFUSE"), 0.0f, 0.16f, 0.9f);
-			glUniform3f(prog->getUniform("SPECULAR"), 0.14, 0.2, 0.8);
-		    glUniform1f(prog->getUniform("SHINE"), 120.0);
-			break;
-		case 1: // flat grey
-			glUniform3f(prog->getUniform("AMBIENCE"), 0.13f, 0.13f, 0.14f);
-			glUniform3f(prog->getUniform("DIFFUSE"), 0.3f, 0.3f, 0.4f);
-			glUniform3f(prog->getUniform("SPECULAR"), 0.3, 0.3, 0.4);
-		    glUniform1f(prog->getUniform("SHINE"), 4.0);
-			break;
-		case 2: //brass
-			glUniform3f(prog->getUniform("AMBIENCE"), 0.3294f, 0.2235f, 0.02745f);
-			glUniform3f(prog->getUniform("DIFFUSE"), 0.7804f, 0.5686f, 0.11373f);
-			glUniform3f(prog->getUniform("SPECULAR"), 0.9922, 0.941176, 0.80784);
-		    glUniform1f(prog->getUniform("SHINE"), 27.9);
-			break;
-		case 3: //ducky feathers
-			glUniform3f(prog->getUniform("AMBIENCE"), 0.09, 0.08, 0.03);
-		    glUniform3f(prog->getUniform("DIFFUSE"), 0.72, 0.4, 0.1);
-		    glUniform3f(prog->getUniform("SPECULAR"), 0.18, 0.16, 0.0);
-		    glUniform1f(prog->getUniform("SHINE"), 4.0);
-		    break;
-	    case 4: // shiny flesh
-			glUniform3f(prog->getUniform("AMBIENCE"), 0.5, 0.2, 0.05);
-		    glUniform3f(prog->getUniform("DIFFUSE"), 0.6, 0.5, 0.1);
-		    glUniform3f(prog->getUniform("SPECULAR"), 0.7, 0.5, 0.1);
-		    glUniform1f(prog->getUniform("SHINE"), 2000);
-			break;
-		}
-	}
-
 	void render()
 	{
 		// Get current frame buffer size.
@@ -325,40 +318,33 @@ public:
 		P->perspective(45.0f, aspect, 0.01f, 100.0f);
 
 
-		// Draw bunny
 		MV->pushMatrix();
 		MV->loadIdentity();
 		MV->pushMatrix();
-		MV->translate(vec3(-.25, .25, -2));
-		
-		prog->bind();
-			MV->pushMatrix();	
-			MV->scale(0.5);
-			SetMaterial(3);
-			glUniformMatrix4fv(prog->getUniform("P"), 1, GL_FALSE,value_ptr(P->topMatrix()));
-			glUniformMatrix4fv(prog->getUniform("MV"), 1, GL_FALSE,value_ptr(MV->topMatrix()));
-			glUniform3f(prog->getUniform("uLight"), 0, 10, 2);
-			glUniform3f(prog->getUniform("eye"), 0, 0, 0);
-			shape->draw(prog);
-		prog->unbind();
-
-		MV->popMatrix();
-		MV->popMatrix();
-
+		MV->translate(vec3(-0.15, 0.11, -2.0));
+		MV->scale(0.4);
+		prog2->bind();
 		MV->pushMatrix();
-		MV->loadIdentity();
-
+		SetMaterial(2);
+		glUniformMatrix4fv(prog2->getUniform("P"), 1, GL_FALSE, value_ptr(P->topMatrix()));
+		glUniformMatrix4fv(prog2->getUniform("MV"), 1, GL_FALSE, value_ptr(MV->topMatrix()));
+		glUniform3f(prog2->getUniform("camera"), 0.0, 0.0, 0.0);
+		glUniform3f(prog2->getUniform("lightSrc"), 2.0, 2.0, 2.0);
+		shape->draw(prog2);
+		prog2->unbind();
+		MV->popMatrix();
+		MV->popMatrix();
 		// camera rotate
 		MV->rotate(camRot, vec3(0, 1, 0));
 
-		// Draw Particles
-		pprog->bind();
+		// Draw
+		prog->bind();
 		updateParticles();
 		updateGeom();
 
-		texture->bind(pprog->getUniform("alphaTexture"));
-		CHECKED_GL_CALL(glUniformMatrix4fv(pprog->getUniform("P"), 1, GL_FALSE, value_ptr(P->topMatrix())));
-		CHECKED_GL_CALL(glUniformMatrix4fv(pprog->getUniform("MV"), 1, GL_FALSE, value_ptr(MV->topMatrix())));
+		texture->bind(prog->getUniform("alphaTexture"));
+		CHECKED_GL_CALL(glUniformMatrix4fv(prog->getUniform("P"), 1, GL_FALSE, value_ptr(P->topMatrix())));
+		CHECKED_GL_CALL(glUniformMatrix4fv(prog->getUniform("MV"), 1, GL_FALSE, value_ptr(MV->topMatrix())));
 
 		CHECKED_GL_CALL(glEnableVertexAttribArray(0));
 		CHECKED_GL_CALL(glBindBuffer(GL_ARRAY_BUFFER, pointsbuffer));
@@ -377,7 +363,7 @@ public:
 		CHECKED_GL_CALL(glVertexAttribDivisor(1, 0));
 		CHECKED_GL_CALL(glDisableVertexAttribArray(0));
 		CHECKED_GL_CALL(glDisableVertexAttribArray(1));
-		pprog->unbind();
+		prog->unbind();
 
 		// Pop matrix stacks.
 		MV->popMatrix();
