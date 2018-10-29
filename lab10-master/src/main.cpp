@@ -35,7 +35,7 @@ public:
 	std::shared_ptr<Program> prog;
 	std::shared_ptr<Program> pprog;
 
-	std::shared_ptr<Shape> sphereShape;
+	std::shared_ptr<Shape> shape;
 
 	std::vector<std::shared_ptr<Particle>> particles;
 
@@ -45,21 +45,11 @@ public:
 	GLfloat points[900];
 	GLfloat pointColors[1200];
 
-	// Duck animation
-	float frontLegRotation = 0;
-	bool frontLegForward = false;
-	float runRotation = 0;
-	vec3 center = vec3(0, 0, 0);
-	vec3 up = vec3(0, 1, 0);
-	vec3 eye = vec3(0, 0, 0);
-	vec3 eyePos = vec3(0, 0, 0);
-
 	GLuint pointsbuffer;
 	GLuint colorbuffer;
 
 	// Contains vertex information for OpenGL
 	GLuint VertexArrayID;
-	GLuint VertexBufferID;
 
 	// OpenGL handle to texture data
 	shared_ptr<Texture> texture;
@@ -129,7 +119,7 @@ public:
 		GLSL::checkVersion();
 
 		// Set background color.
-		CHECKED_GL_CALL(glClearColor(.12f, .34f, .56f, 1.0f));
+		CHECKED_GL_CALL(glClearColor(.12f, .34f, .56f, 1.f));
 
 		// Enable z-buffer test.
 		CHECKED_GL_CALL(glEnable(GL_DEPTH_TEST));
@@ -156,7 +146,6 @@ public:
 		prog->addUniform("SHINE");
 		prog->addUniform("uLight");
 		prog->addUniform("eye");
-		prog->addUniform("view");
 		prog->addAttribute("vertPos");
 		prog->addAttribute("vertNor");
 
@@ -202,10 +191,10 @@ public:
 	void initGeom(const std::string& resourceDirectory)
 	{
 		// Initialize sphere mesh
-		sphereShape = make_shared<Shape>();
-		sphereShape->loadMesh(resourceDirectory + "/sphere.obj");
-		sphereShape->resize();
-		sphereShape->init();
+		shape = make_shared<Shape>();
+		shape->loadMesh(resourceDirectory + "/bunny.obj");
+		shape->resize();
+		shape->init();
 
 		// generate the VAO
 		CHECKED_GL_CALL(glGenVertexArrays(1, &VertexArrayID));
@@ -300,9 +289,9 @@ public:
 		    glUniform1f(prog->getUniform("SHINE"), 27.9);
 			break;
 		case 3: //ducky feathers
-			glUniform3f(prog->getUniform("AMBIENCE"), 0.6, 0.5, 0.0);
-		    glUniform3f(prog->getUniform("DIFFUSE"), 0.7, 0.7, 0.0);
-		    glUniform3f(prog->getUniform("SPECULAR"), 0.8, 0.8, 0.0);
+			glUniform3f(prog->getUniform("AMBIENCE"), 0.09, 0.08, 0.03);
+		    glUniform3f(prog->getUniform("DIFFUSE"), 0.72, 0.4, 0.1);
+		    glUniform3f(prog->getUniform("SPECULAR"), 0.18, 0.16, 0.0);
 		    glUniform1f(prog->getUniform("SHINE"), 4.0);
 		    break;
 	    case 4: // shiny flesh
@@ -312,224 +301,6 @@ public:
 		    glUniform1f(prog->getUniform("SHINE"), 2000);
 			break;
 		}
-	}
-
-	void drawDuck(shared_ptr<MatrixStack> &P, shared_ptr<MatrixStack> &MV, vec3 eyePos){
-
-		// Draw head
-		MV->pushMatrix();
-			MV->translate(glm::vec3(-0.25, 0.4, 0));
-			MV->scale(0.2);
-			SetMaterial(3);
-			glUniformMatrix4fv(prog->getUniform("P"), 1, GL_FALSE, glm::value_ptr(P->topMatrix()));
-			glUniformMatrix4fv(prog->getUniform("MV"), 1, GL_FALSE, glm::value_ptr(MV->topMatrix()));
-			glUniformMatrix4fv(prog->getUniform("view"), 1, GL_FALSE,value_ptr(lookAt(eyePos, center, up)));
-			glUniform3f(prog->getUniform("uLight"), 0, 100, 0);
-			glUniform3f(prog->getUniform("eye"), eye.x, eye.y, eye.z);
-			sphereShape->draw(prog);
-		MV->popMatrix();
-
-		// Draw belly
-		MV->pushMatrix();
-			MV->translate(glm::vec3(0, 0.1, 0));
-			MV->scale(glm::vec3(1, 0.75, 0.75));
-			MV->scale(0.4);
-			SetMaterial(3);
-			glUniformMatrix4fv(prog->getUniform("P"), 1, GL_FALSE, glm::value_ptr(P->topMatrix()));
-			glUniformMatrix4fv(prog->getUniform("MV"), 1, GL_FALSE, glm::value_ptr(MV->topMatrix()));
-			glUniformMatrix4fv(prog->getUniform("view"), 1, GL_FALSE,value_ptr(lookAt(eyePos, center, up)));
-			glUniform3f(prog->getUniform("uLight"), 0, 100, 0);
-			glUniform3f(prog->getUniform("eye"), eye.x, eye.y, eye.z);
-			sphereShape->draw(prog);
-		MV->popMatrix();
-		
-		// Draw front wing
-		MV->pushMatrix();
-			MV->translate(glm::vec3(0, 0.1, 0.3));
-			MV->rotate(-35, glm::vec3(0, 1, 0));
-			MV->scale(glm::vec3(1, 0.5, 0.25));
-			MV->scale(0.2);
-			SetMaterial(3);
-			glUniformMatrix4fv(prog->getUniform("P"), 1, GL_FALSE, glm::value_ptr(P->topMatrix()));
-			glUniformMatrix4fv(prog->getUniform("MV"), 1, GL_FALSE, glm::value_ptr(MV->topMatrix()));
-			glUniformMatrix4fv(prog->getUniform("view"), 1, GL_FALSE,value_ptr(lookAt(eyePos, center, up)));
-			glUniform3f(prog->getUniform("uLight"), 0, 100, 0);
-			glUniform3f(prog->getUniform("eye"), eye.x, eye.y, eye.z);
-			sphereShape->draw(prog);
-		MV->popMatrix();
-
-		// Draw back wing
-		MV->pushMatrix();
-			MV->translate(glm::vec3(0, 0.1, -0.3));
-			MV->rotate(35, glm::vec3(0, 1, 0));
-			MV->scale(glm::vec3(1, 0.5, 0.25));
-			MV->scale(0.2);
-			SetMaterial(3);
-			glUniformMatrix4fv(prog->getUniform("P"), 1, GL_FALSE, glm::value_ptr(P->topMatrix()));
-			glUniformMatrix4fv(prog->getUniform("MV"), 1, GL_FALSE, glm::value_ptr(MV->topMatrix()));
-			glUniformMatrix4fv(prog->getUniform("view"), 1, GL_FALSE,value_ptr(lookAt(eyePos, center, up)));
-			glUniform3f(prog->getUniform("uLight"), 0, 100, 0);
-			glUniform3f(prog->getUniform("eye"), eye.x, eye.y, eye.z);
-			sphereShape->draw(prog);
-		MV->popMatrix();
-
-		// Draw Tail
-		MV->pushMatrix();
-			MV->translate(glm::vec3(0.2, 0.15, 0));
-			MV->rotate(10, glm::vec3(0, 0, 1));
-			MV->scale(glm::vec3(1, 0.75, 0.75));
-			MV->scale(glm::vec3(0.3, 0.22, 0.1));
-			SetMaterial(3);
-			glUniformMatrix4fv(prog->getUniform("P"), 1, GL_FALSE, glm::value_ptr(P->topMatrix()));
-			glUniformMatrix4fv(prog->getUniform("MV"), 1, GL_FALSE, glm::value_ptr(MV->topMatrix()));
-			glUniformMatrix4fv(prog->getUniform("view"), 1, GL_FALSE,value_ptr(lookAt(eyePos, center, up)));
-			glUniform3f(prog->getUniform("uLight"), 0, 100, 0);
-			glUniform3f(prog->getUniform("eye"), eye.x, eye.y, eye.z);
-			sphereShape->draw(prog);
-		MV->popMatrix();
-
-		// Draw top of bill
-		MV->pushMatrix();
-			MV->translate(glm::vec3(-0.4, 0.37, 0));
-			MV->scale(glm::vec3(0.25, 0.04, 0.12));
-			SetMaterial(4);
-			glUniformMatrix4fv(prog->getUniform("P"), 1, GL_FALSE, glm::value_ptr(P->topMatrix()));
-			glUniformMatrix4fv(prog->getUniform("MV"), 1, GL_FALSE, glm::value_ptr(MV->topMatrix()));
-			glUniformMatrix4fv(prog->getUniform("view"), 1, GL_FALSE,value_ptr(lookAt(eyePos, center, up)));
-			glUniform3f(prog->getUniform("uLight"), 0, 1000, 0);
-			glUniform3f(prog->getUniform("eye"), eye.x, eye.y, eye.z);
-			sphereShape->draw(prog);
-		MV->popMatrix();
-
-		// Draw bottom of bill
-		MV->pushMatrix();
-			MV->translate(glm::vec3(-0.38, 0.35, 0));
-			MV->rotate(0.1, glm::vec3(0, 0, 1));
-			MV->scale(glm::vec3(0.22, 0.04, 0.10));
-			SetMaterial(4);
-			glUniformMatrix4fv(prog->getUniform("P"), 1, GL_FALSE, glm::value_ptr(P->topMatrix()));
-			glUniformMatrix4fv(prog->getUniform("MV"), 1, GL_FALSE, glm::value_ptr(MV->topMatrix()));
-			glUniformMatrix4fv(prog->getUniform("view"), 1, GL_FALSE,value_ptr(lookAt(eyePos, center, up)));
-			glUniform3f(prog->getUniform("uLight"), 0, 100, 0);
-			glUniform3f(prog->getUniform("eye"), eye.x, eye.y, eye.z);
-			sphereShape->draw(prog);
-		MV->popMatrix();
-
-		// Move whole front leg
-		MV->rotate(frontLegRotation, glm::vec3(0, 0, 1));
-
-		// Draw front thigh
-		MV->pushMatrix();
-			MV->translate(glm::vec3(-0.05, -0.2, 0.2));
-			MV->rotate(45, glm::vec3(0, 0, 1));
-			MV->scale(glm::vec3(0.22, 0.12, 0.1));
-			SetMaterial(4);
-			glUniformMatrix4fv(prog->getUniform("P"), 1, GL_FALSE, glm::value_ptr(P->topMatrix()));
-			glUniformMatrix4fv(prog->getUniform("MV"), 1, GL_FALSE, glm::value_ptr(MV->topMatrix()));
-			glUniformMatrix4fv(prog->getUniform("view"), 1, GL_FALSE,value_ptr(lookAt(eyePos, center, up)));
-			glUniform3f(prog->getUniform("uLight"), 0, 100, 100);
-			glUniform3f(prog->getUniform("eye"), eye.x, eye.y, eye.z);
-			sphereShape->draw(prog);
-		MV->popMatrix();
-
-		// Draw front knee
-		MV->pushMatrix();
-			MV->translate(glm::vec3(-0.16, -0.36, 0.2));
-			MV->scale(glm::vec3(0.05, 0.075, 0.05));
-			SetMaterial(4);
-			glUniformMatrix4fv(prog->getUniform("P"), 1, GL_FALSE, glm::value_ptr(P->topMatrix()));
-			glUniformMatrix4fv(prog->getUniform("MV"), 1, GL_FALSE, glm::value_ptr(MV->topMatrix()));
-			glUniformMatrix4fv(prog->getUniform("view"), 1, GL_FALSE,value_ptr(lookAt(eyePos, center, up)));
-			glUniform3f(prog->getUniform("uLight"), 0, 100, 100);
-			glUniform3f(prog->getUniform("eye"), eye.x, eye.y, eye.z);
-			sphereShape->draw(prog);
-		MV->popMatrix();
-
-		// Draw front calf
-		MV->pushMatrix();
-			MV->translate(glm::vec3(-0.09, -0.42, 0.2));
-			MV->rotate(10, glm::vec3(0, 0, 1));
-			MV->scale(glm::vec3(0.075, 0.15, 0.075));
-			SetMaterial(4);
-			glUniformMatrix4fv(prog->getUniform("P"), 1, GL_FALSE, glm::value_ptr(P->topMatrix()));
-			glUniformMatrix4fv(prog->getUniform("MV"), 1, GL_FALSE, glm::value_ptr(MV->topMatrix()));
-			glUniformMatrix4fv(prog->getUniform("view"), 1, GL_FALSE,value_ptr(lookAt(eyePos, center, up)));
-			glUniform3f(prog->getUniform("uLight"), 0, 100, 100);
-			glUniform3f(prog->getUniform("eye"), eye.x, eye.y, eye.z);
-			sphereShape->draw(prog);
-		MV->popMatrix();
-
-		// Draw front foot
-		MV->pushMatrix();
-			MV->translate(glm::vec3(-0.075, -0.54, 0.2));
-			MV->rotate(10, glm::vec3(0, 0, 1));
-			MV->scale(glm::vec3(0.12, 0.05, 0.055));
-			SetMaterial(4);
-			glUniformMatrix4fv(prog->getUniform("P"), 1, GL_FALSE, glm::value_ptr(P->topMatrix()));
-			glUniformMatrix4fv(prog->getUniform("MV"), 1, GL_FALSE, glm::value_ptr(MV->topMatrix()));
-			glUniformMatrix4fv(prog->getUniform("view"), 1, GL_FALSE,value_ptr(lookAt(eyePos, center, up)));
-			glUniform3f(prog->getUniform("uLight"), 0, 100, 100);
-			glUniform3f(prog->getUniform("eye"), eye.x, eye.y, eye.z);
-			sphereShape->draw(prog);
-		MV->popMatrix();
-
-		// Move whole back leg
-		MV->rotate(-2*frontLegRotation, glm::vec3(0, 0, 1));
-
-		// Draw back thigh
-		MV->pushMatrix();
-			MV->translate(glm::vec3(-0.05, -0.2, -0.2));
-			MV->rotate(45, glm::vec3(0, 0, 1));
-			MV->scale(glm::vec3(0.22, 0.12, 0.1));
-			SetMaterial(4);
-			glUniformMatrix4fv(prog->getUniform("P"), 1, GL_FALSE, glm::value_ptr(P->topMatrix()));
-			glUniformMatrix4fv(prog->getUniform("MV"), 1, GL_FALSE, glm::value_ptr(MV->topMatrix()));
-			glUniformMatrix4fv(prog->getUniform("view"), 1, GL_FALSE,value_ptr(lookAt(eyePos, center, up)));
-			glUniform3f(prog->getUniform("uLight"), 0, 100, 100);
-			glUniform3f(prog->getUniform("eye"), eye.x, eye.y, eye.z);
-			sphereShape->draw(prog);
-		MV->popMatrix();
-
-		// Draw back knee
-		MV->pushMatrix();
-			MV->translate(glm::vec3(-0.16, -0.36, -0.2));
-			MV->scale(glm::vec3(0.05, 0.075, 0.05));
-			SetMaterial(4);
-			glUniformMatrix4fv(prog->getUniform("P"), 1, GL_FALSE, glm::value_ptr(P->topMatrix()));
-			glUniformMatrix4fv(prog->getUniform("MV"), 1, GL_FALSE, glm::value_ptr(MV->topMatrix()));
-			glUniformMatrix4fv(prog->getUniform("view"), 1, GL_FALSE,value_ptr(lookAt(eyePos, center, up)));
-			glUniform3f(prog->getUniform("uLight"), 0, 100, 100);
-			glUniform3f(prog->getUniform("eye"), eye.x, eye.y, eye.z);
-			sphereShape->draw(prog);
-		MV->popMatrix();
-
-		// Draw back calf
-		MV->pushMatrix();
-			MV->translate(glm::vec3(-0.09, -0.42, -0.2));
-			MV->rotate(10, glm::vec3(0, 0, 1));
-			MV->scale(glm::vec3(0.075, 0.15, 0.075));
-			SetMaterial(4);
-			glUniformMatrix4fv(prog->getUniform("P"), 1, GL_FALSE, glm::value_ptr(P->topMatrix()));
-			glUniformMatrix4fv(prog->getUniform("MV"), 1, GL_FALSE, glm::value_ptr(MV->topMatrix()));
-			glUniformMatrix4fv(prog->getUniform("view"), 1, GL_FALSE,value_ptr(lookAt(eyePos, center, up)));
-			glUniform3f(prog->getUniform("uLight"), 0, 100, 100);
-			glUniform3f(prog->getUniform("eye"), eye.x, eye.y, eye.z);
-			sphereShape->draw(prog);
-		MV->popMatrix();
-
-		// Draw back foot
-		MV->pushMatrix();
-			MV->translate(glm::vec3(-0.075, -0.54, -0.2));
-			MV->rotate(10, glm::vec3(0, 0, 1));
-			MV->scale(glm::vec3(0.12, 0.05, 0.055));
-			SetMaterial(4);
-			glUniformMatrix4fv(prog->getUniform("P"), 1, GL_FALSE, glm::value_ptr(P->topMatrix()));
-			glUniformMatrix4fv(prog->getUniform("MV"), 1, GL_FALSE, glm::value_ptr(MV->topMatrix()));
-			glUniformMatrix4fv(prog->getUniform("view"), 1, GL_FALSE,value_ptr(lookAt(eyePos, center, up)));
-			glUniform3f(prog->getUniform("uLight"), 0, 100, 100);
-			glUniform3f(prog->getUniform("eye"), eye.x, eye.y, eye.z);
-			sphereShape->draw(prog);
-		MV->popMatrix();
 	}
 
 	void render()
@@ -554,13 +325,33 @@ public:
 		P->perspective(45.0f, aspect, 0.01f, 100.0f);
 
 
+		// Draw bunny
+		MV->pushMatrix();
+		MV->loadIdentity();
+		MV->pushMatrix();
+		MV->translate(vec3(-.25, .25, -2));
+		
+		prog->bind();
+			MV->pushMatrix();	
+			MV->scale(0.5);
+			SetMaterial(3);
+			glUniformMatrix4fv(prog->getUniform("P"), 1, GL_FALSE,value_ptr(P->topMatrix()));
+			glUniformMatrix4fv(prog->getUniform("MV"), 1, GL_FALSE,value_ptr(MV->topMatrix()));
+			glUniform3f(prog->getUniform("uLight"), 0, 10, 2);
+			glUniform3f(prog->getUniform("eye"), 0, 0, 0);
+			shape->draw(prog);
+		prog->unbind();
+
+		MV->popMatrix();
+		MV->popMatrix();
+
 		MV->pushMatrix();
 		MV->loadIdentity();
 
 		// camera rotate
 		MV->rotate(camRot, vec3(0, 1, 0));
 
-		// Draw
+		// Draw Particles
 		pprog->bind();
 		updateParticles();
 		updateGeom();
@@ -587,17 +378,6 @@ public:
 		CHECKED_GL_CALL(glDisableVertexAttribArray(0));
 		CHECKED_GL_CALL(glDisableVertexAttribArray(1));
 		pprog->unbind();
-
-		// DRAW DUCK
-		MV->popMatrix();
-		MV->pushMatrix();
-		prog->bind();
-			glUniformMatrix4fv(prog->getUniform("P"), 1, GL_FALSE, value_ptr(P->topMatrix()));
-			MV->pushMatrix();
-				MV->loadIdentity();
-					drawDuck(P, MV, eyePos);
-			MV->popMatrix();
-		prog->unbind();
 
 		// Pop matrix stacks.
 		MV->popMatrix();

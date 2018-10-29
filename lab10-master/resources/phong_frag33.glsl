@@ -12,7 +12,7 @@ vec3 source = uLight;
 in vec3 normal;		// surface normal
 in vec3 vertPosition;
 in vec3 eyePos;
-out vec3 color;
+out vec4 color;
 
 const vec3 maxIntensity = vec3(1.0, 1.0, 1.0);
 
@@ -34,8 +34,8 @@ void main()
 	// gPortion out the total intensity between ambience and diffused light
 	vec3 diffLight = DIFFUSE * clamp(dot(nNormal, light), 0.0, 1.0) * maxIntensity;
 	vec3 ambLight = AMBIENCE * maxIntensity;
-	vec3 specLight = SPECULAR * pow(dot(nNormal, H), SHINE) * maxIntensity;
+	vec3 specLight = SPECULAR * clamp(pow(dot(nNormal, H), SHINE), 0, 1) * maxIntensity;
  
 	// Set calculated color as color of frag
-	color = clamp(diffLight + ambLight + specLight, 0, 1);
+	color = vec4 (clamp(diffLight + ambLight + specLight, 0, 1), 1);
 }
